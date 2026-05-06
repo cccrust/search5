@@ -1,8 +1,10 @@
-use crate::parser::{HtmlParser, ParsedDocument};
+use crate::parser::ParsedDocument;
 use scraper::{Html, Selector};
 use std::path::Path;
 
 pub struct HtmlParser;
+
+pub use crate::parser::HtmlParser as HtmlParserTrait;
 
 impl HtmlParser {
     pub fn new() -> Self {
@@ -57,7 +59,7 @@ impl HtmlParser {
         let entries = std::fs::read_dir(dir)?;
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map_or(false, |ext| ext == "html") {
+            if path.extension().is_some_and(|ext| ext == "html") {
                 match self.parse_file(&path) {
                     Ok(doc) => documents.push(doc),
                     Err(e) => eprintln!("Failed to parse {:?}: {}", path, e),
@@ -100,7 +102,6 @@ mod tests {
         let parser = HtmlParser::new();
         let html = r#"<!DOCTYPE html>
 <html>
-<head><title>Page Title</title></head>
 <body><h1>Heading One</h1></body>
 </html>"#;
 

@@ -11,6 +11,10 @@ pub struct ParsedDocument {
 
 impl ParsedDocument {
     pub fn new(url: String, title: String, content: String) -> Self {
-        Self { url, title, content }
+        Self {
+            url,
+            title,
+            content,
+        }
     }
 }

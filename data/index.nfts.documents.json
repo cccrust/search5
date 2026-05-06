@@ -1,0 +1,102 @@
+{
+  "18": {
+    "url": "data/16_git.html",
+    "title": "版本控制",
+    "content": "Git 是分散式版本控制系統，追蹤程式碼變更歷史。 常用指令包括 git add、git commit、git push、git pull、git merge。 GitHub、GitLab 提供程式碼託管與協作功能。"
+  },
+  "16": {
+    "url": "data/18_microservice.html",
+    "title": "微服務架構",
+    "content": "微服務將應用拆分為多個小型服務，每個服務獨立部署與擴展。 服務間通訊使用 HTTP API 或訊息佇列，如 RabbitMQ、Kafka。 容器化與編排工具 Docker 與 Kubernetes 是微服務的重要支撐。"
+  },
+  "2": {
+    "url": "data/07_security.html",
+    "title": "資訊安全",
+    "content": "資訊安全包含機密性、完整性、可用性三大目標。 常見的攻擊方式包括 SQL 注入、XSS、CSRF、DDoS 等。 防護措施包括防火牆、入侵偵測、加密技術、安全更新等。"
+  },
+  "3": {
+    "url": "data/20_backend.html",
+    "title": "後端開發",
+    "content": "後端開發處理伺服器端邏輯、資料庫操作與 API 提供。 常見後端語言與框架有 Node.js/Express、Python/Django、Java/Spring、Go/Gin。 快取、負載平衡、訊息佇列是後端架構的常見元件。"
+  },
+  "1": {
+    "url": "data/06_cloud.html",
+    "title": "雲端運算",
+    "content": "雲端運算透過網路提供運算資源，主要服務模式包括 IaaS、PaaS、SaaS。 主要雲端供應商有 AWS、Google Cloud、Azure 等。 雲端技術支援彈性擴展、按需使用，是現代資訊架構的重要基礎。"
+  },
+  "7": {
+    "url": "data/09_network.html",
+    "title": "網路工程",
+    "content": "電腦網路連接多台電腦以共享資源與交換資料。 OSI 模型分為七層，TCP/IP 模型簡化為四層。 常見網路協定包括 HTTP、HTTPS、FTP、SMTP、TCP、UDP、IP 等。"
+  },
+  "8": {
+    "url": "data/15_linux.html",
+    "title": "Linux 系統",
+    "content": "Linux 是開源的作業系統核心，廣泛應用於伺服器與嵌入式系統。 常見 Linux 發行版包括 Ubuntu、Debian、CentOS、Arch Linux。 Linux 指令包含 ls、cd、grep、awk、sed 等強大工具。"
+  },
+  "17": {
+    "url": "data/12_devops.html",
+    "title": "DevOps 實踐",
+    "content": "DevOps 結合開發與營運，強調自動化與持續交付。 CI/CD 是持續整合與持續部署的實踐流程。 常用工具包括 Docker、Kubernetes、Jenkins、GitLab CI 等。"
+  },
+  "15": {
+    "url": "data/11_testing.html",
+    "title": "軟體測試",
+    "content": "軟體測試確保軟體品質，包含單元測試、整合測試、系統測試。 測試方法有黑盒測試與白盒測試，自動化測試可以提升效率。 常見測試框架包括 JUnit、pytest、Mocha 等。"
+  },
+  "13": {
+    "url": "data/14_data_science.html",
+    "title": "資料科學",
+    "content": "資料科學結合統計學、程式設計與領域知識，從資料中提取洞見。 常用工具包括 Python、Pandas、NumPy、Scikit-learn 等。 資料視覺化幫助理解複雜資料，常用庫有 Matplotlib、D3.js。"
+  },
+  "4": {
+    "url": "data/13_blockchain.html",
+    "title": "區塊鏈技術",
+    "content": "區塊鏈是去中心化的分散式帳本技術，確保資料不可篡改。 比特幣是第一個區塊鏈應用，以太坊支援智慧合約。 共識機制有工作量證明、權益證明等多種方式。"
+  },
+  "12": {
+    "url": "data/08_algorithm.html",
+    "title": "演算法基礎",
+    "content": "演算法是解決問題的步驟與方法，常用複雜度分析來評估效能。 常見排序演算法包括氣泡排序、快速排序、合併排序等。 搜尋演算法有線性搜尋與二分搜尋，圖論演算法包括 Dijkstra、A* 等。"
+  },
+  "5": {
+    "url": "data/03_web.html",
+    "title": "網頁開發入門",
+    "content": "網頁開發涉及 HTML、CSS 與 JavaScript 三大技術。 HTML 負責結構，CSS 負責外觀，JavaScript 負責互動功能。 現代網頁開發也包含框架如 React、Vue、Angular 等。"
+  },
+  "14": {
+    "url": "data/01_programming.html",
+    "title": "程式設計基礎",
+    "content": "程式設計是編寫電腦程式的過程，包含變數、函式、迴圈等基本概念。 常見的程式語言包括 Python、Java、C++、JavaScript 等。 良好的程式設計需要遵循程式碼規範，注重效率與可維護性。"
+  },
+  "9": {
+    "url": "data/05_ai.html",
+    "title": "人工智慧概述",
+    "content": "人工智慧是模擬人類智慧的電腦系統，包含機器學習與深度學習。 機器學習演算法可以從資料中自動學習規律，常見的有決策樹、支持向量機、類神經網路。 深度學習在影像識別、自然語言處理領域取得突破性進展。"
+  },
+  "6": {
+    "url": "data/17_api.html",
+    "title": "API 設計",
+    "content": "API 是軟體之間溝通的介面，常見格式有 REST 與 GraphQL。 RESTful API 使用 HTTP 方法 GET、POST、PUT、DELETE 對應資源操作。 好的 API 設計需要清晰的命名、完善的文件與一致的錯誤處理。"
+  },
+  "20": {
+    "url": "data/02_rust.html",
+    "title": "Rust 語言介紹",
+    "content": "Rust 是一種系統程式語言，強調安全性與並發性。 Rust 的所有權系統可以在編譯時防止記憶體錯誤，如空指標與資料競爭。 許多大型公司如 Mozilla、Dropbox、微軟都在使用 Rust。"
+  },
+  "19": {
+    "url": "data/04_database.html",
+    "title": "資料庫系統",
+    "content": "資料庫用於儲存與管理結構化資料，常見的有 MySQL、PostgreSQL、MongoDB。 SQL 是用於操作關聯式資料庫的標準查詢語言。 資料庫設計需要正規化以確保資料完整性與效能。"
+  },
+  "11": {
+    "url": "data/10_mobile.html",
+    "title": "行動開發",
+    "content": "行動開發主要分為 iOS 與 Android 兩大平台。 iOS 使用 Swift 或 Objective-C 開發，Android 使用 Kotlin 或 Java。 跨平台框架如 React Native、Flutter 可以同時支援雙平台。"
+  },
+  "10": {
+    "url": "data/19_frontend.html",
+    "title": "前端工程",
+    "content": "前端開發專注於使用者介面與互動體驗。 現代前端框架 React、Vue、Angular 都有元件化與虛擬 DOM 特性。 狀態管理、路由、 Build Tool 是前端工程的重要議題。"
+  }
+}

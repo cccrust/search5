@@ -2,11 +2,15 @@ use crate::indexer::{IndexStats, SearchResult};
 use crate::parser::{HtmlParser, ParsedDocument};
 use nanofts::{EngineConfig, UnifiedEngine};
 use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
 
 pub struct Indexer {
     engine: UnifiedEngine,
     parser: HtmlParser,
+    documents: HashMap<u32, ParsedDocument>,
+    next_id: u32,
+    index_path: String,
 }
 
 impl Indexer {
@@ -16,17 +20,45 @@ impl Indexer {
         Self {
             engine,
             parser: HtmlParser::new(),
+            documents: HashMap::new(),
+            next_id: 1,
+            index_path: String::new(),
         }
     }
 
     pub fn new_persistent(path: &str) -> Self {
-        let config = EngineConfig::persistent(path)
-            .with_max_chinese_length(4)
-            .with_min_term_length(2);
+        let config = EngineConfig::persistent(path);
         let engine = UnifiedEngine::new(config).expect("Failed to create engine");
+
+        let index_path = path.to_string();
+        let documents_path = format!("{}.documents.json", path);
+        let documents = Self::load_documents(&documents_path);
+
+        let next_id = documents.keys().max().map(|k| k + 1).unwrap_or(1);
+
         Self {
             engine,
             parser: HtmlParser::new(),
+            documents,
+            next_id,
+            index_path,
+        }
+    }
+
+    fn load_documents(path: &str) -> HashMap<u32, ParsedDocument> {
+        if let Ok(data) = fs::read_to_string(path) {
+            serde_json::from_str(&data).unwrap_or_default()
+        } else {
+            HashMap::new()
+        }
+    }
+
+    fn save_documents(&self) {
+        if !self.index_path.is_empty() {
+            let path = format!("{}.documents.json", self.index_path);
+            if let Ok(data) = serde_json::to_string_pretty(&self.documents) {
+                let _ = fs::write(path, data);
+            }
         }
     }
 
@@ -34,21 +66,26 @@ impl Indexer {
         let documents = self.parser.parse_directory(dir)?;
 
         let mut indexed = 0;
-        for (i, doc) in documents.into_iter().enumerate() {
-            self.index_document(i as u64, doc);
+        for doc in documents {
+            self.index_document(doc);
             indexed += 1;
         }
 
         self.engine.flush().ok();
+        self.save_documents();
 
-        let stats = self.engine.get_index_stats();
         Ok(IndexStats {
-            documents: stats.total_docs,
+            documents: self.documents.len(),
             indexed,
         })
     }
 
-    fn index_document(&mut self, id: u64, doc: ParsedDocument) {
+    pub fn index_document(&mut self, doc: ParsedDocument) {
+        let id = self.next_id;
+        self.next_id += 1;
+
+        self.documents.insert(id, doc.clone());
+
         let mut fields = HashMap::new();
         fields.insert("url".to_string(), doc.url.clone());
         fields.insert("title".to_string(), doc.title.clone());
@@ -63,22 +100,27 @@ impl Indexer {
             Err(_) => return Vec::new(),
         };
 
+        let doc_ids = result.top(limit);
         let mut results = Vec::new();
-        for doc_id in result.iter().take(limit) {
-            if let Ok(Some(doc)) = self.engine.get_document(*doc_id) {
-                let url = doc.get("url").cloned().unwrap_or_default();
-                let title = doc.get("title").cloned().unwrap_or_default();
-                let content = doc.get("content").cloned().unwrap_or_default();
 
-                let snippet = if content.len() > 100 {
-                    format!("{}...", &content[..100])
+        for doc_id in doc_ids {
+            if let Some(doc) = self.documents.get(&doc_id) {
+                let snippet = if doc.content.len() > 100 {
+                    let end = doc
+                        .content
+                        .chars()
+                        .take(100)
+                        .map(|c| c.len_utf8())
+                        .sum::<usize>()
+                        .min(doc.content.len());
+                    format!("{}...", &doc.content[..end])
                 } else {
-                    content
+                    doc.content.clone()
                 };
 
                 results.push(SearchResult {
-                    url,
-                    title,
+                    url: doc.url.clone(),
+                    title: doc.title.clone(),
                     snippet,
                     score: 1.0,
                 });
@@ -93,10 +135,9 @@ impl Indexer {
     }
 
     pub fn get_stats(&self) -> IndexStats {
-        let stats = self.engine.get_index_stats();
         IndexStats {
-            documents: stats.total_docs,
-            indexed: stats.total_docs,
+            documents: self.documents.len(),
+            indexed: self.documents.len(),
         }
     }
 }
@@ -134,7 +175,7 @@ mod tests {
             "Test content".to_string(),
         );
 
-        indexer.index_document(1, doc);
+        indexer.index_document(doc);
         indexer.flush();
 
         let results = indexer.search("Test", 10);
@@ -151,7 +192,7 @@ mod tests {
             "這是中文測試內容".to_string(),
         );
 
-        indexer.index_document(1, doc);
+        indexer.index_document(doc);
         indexer.flush();
 
         let results = indexer.search("中文", 10);
@@ -168,7 +209,7 @@ mod tests {
             "搜尋引擎測試".to_string(),
         );
 
-        indexer.index_document(1, doc);
+        indexer.index_document(doc);
         indexer.flush();
 
         let results = indexer.search("搜尋", 10);
@@ -179,23 +220,17 @@ mod tests {
     fn test_search_multiple_documents() {
         let mut indexer = Indexer::new();
 
-        indexer.index_document(
-            1,
-            ParsedDocument::new(
-                "doc1.html".to_string(),
-                "Rust 程式".to_string(),
-                "Rust 是一種程式語言".to_string(),
-            ),
-        );
+        indexer.index_document(ParsedDocument::new(
+            "doc1.html".to_string(),
+            "Rust 程式".to_string(),
+            "Rust 是一種程式語言".to_string(),
+        ));
 
-        indexer.index_document(
-            2,
-            ParsedDocument::new(
-                "doc2.html".to_string(),
-                "Python 程式".to_string(),
-                "Python 也是一種程式語言".to_string(),
-            ),
-        );
+        indexer.index_document(ParsedDocument::new(
+            "doc2.html".to_string(),
+            "Python 程式".to_string(),
+            "Python 也是一種程式語言".to_string(),
+        ));
 
         indexer.flush();
 
@@ -207,14 +242,11 @@ mod tests {
     fn test_get_stats() {
         let mut indexer = Indexer::new();
 
-        indexer.index_document(
-            1,
-            ParsedDocument::new(
-                "test.html".to_string(),
-                "Title".to_string(),
-                "Content".to_string(),
-            ),
-        );
+        indexer.index_document(ParsedDocument::new(
+            "test.html".to_string(),
+            "Title".to_string(),
+            "Content".to_string(),
+        ));
 
         indexer.flush();
 
@@ -229,14 +261,11 @@ mod tests {
 
         let mut indexer = Indexer::new_persistent(index_path.to_str().unwrap());
 
-        indexer.index_document(
-            1,
-            ParsedDocument::new(
-                "test.html".to_string(),
-                "Persistent".to_string(),
-                "Persistent content".to_string(),
-            ),
-        );
+        indexer.index_document(ParsedDocument::new(
+            "test.html".to_string(),
+            "Persistent".to_string(),
+            "Persistent content".to_string(),
+        ));
 
         indexer.flush();
 
