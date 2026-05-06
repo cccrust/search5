@@ -1,6 +1,6 @@
 [package]
 name = "search5"
-version = "0.3.0"
+version = "0.3.2"
 edition = "2024"
 description = "search5 - Local File Search Engine"
 license = "MIT"
