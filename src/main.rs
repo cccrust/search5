@@ -6,7 +6,7 @@ mod parser;
 mod search;
 mod ui;
 
-use api::{create_router_with_state, SharedIndexer};
+use api::{SharedIndexer, create_router_with_state};
 use axum::{extract::Path, response::Html, routing::get};
 use indexer::Indexer;
 use std::net::SocketAddr;
@@ -31,10 +31,10 @@ async fn main() {
 
     async fn static_file_handler(Path(file): Path<String>) -> Html<String> {
         let path = std::path::Path::new("data").join(&file);
-        if path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                return Html(content);
-            }
+        if path.exists()
+            && let Ok(content) = std::fs::read_to_string(&path)
+        {
+            return Html(content);
         }
         Html("<h1>404 - File not found</h1>".to_string())
     }

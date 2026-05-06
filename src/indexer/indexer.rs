@@ -27,12 +27,18 @@ impl Indexer {
     }
 
     pub fn new_persistent(path: &str) -> Self {
-        let config = EngineConfig::persistent(path);
+        let index_path = path.to_string();
+        let index_file = std::path::Path::new(&index_path);
+        let documents_path = format!("{}.documents.json", path);
+
+        let config = EngineConfig::persistent(path).with_drop_if_exists(!index_file.exists());
         let engine = UnifiedEngine::new(config).expect("Failed to create engine");
 
-        let index_path = path.to_string();
-        let documents_path = format!("{}.documents.json", path);
-        let documents = Self::load_documents(&documents_path);
+        let documents = if index_file.exists() {
+            Self::load_documents(&documents_path)
+        } else {
+            HashMap::new()
+        };
 
         let next_id = documents.keys().max().map(|k| k + 1).unwrap_or(1);
 
@@ -63,6 +69,9 @@ impl Indexer {
     }
 
     pub fn index_directory(&mut self, dir: &Path) -> std::io::Result<IndexStats> {
+        self.documents.clear();
+        self.next_id = 1;
+
         let documents = self.parser.parse_directory(dir)?;
 
         let mut indexed = 0;
