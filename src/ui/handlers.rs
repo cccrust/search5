@@ -41,7 +41,7 @@ pub async fn search_page(
     let q = query.q.as_deref().unwrap_or("").to_string();
     let page = query.page.unwrap_or(1).max(1);
 
-    let indexer = state.lock().await;
+    let mut indexer = state.lock().await;
     let stats = indexer.get_stats();
 
     let results = if q.is_empty() {

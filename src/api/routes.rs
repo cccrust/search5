@@ -90,7 +90,7 @@ async fn search_handler(
     State(state): State<SharedIndexer>,
     Query(query): Query<SearchQuery>,
 ) -> Json<SearchResponse> {
-    let indexer = state.lock().await;
+    let mut indexer = state.lock().await;
 
     let results = indexer.search(&query.q, query.limit);
 

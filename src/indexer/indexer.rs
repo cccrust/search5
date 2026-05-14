@@ -1,12 +1,12 @@
 use crate::indexer::{IndexStats, SearchResult};
 use crate::parser::{HtmlParser, ParsedDocument};
-use nanofts::{EngineConfig, UnifiedEngine};
+use sql5::fts::FtsTable;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 pub struct Indexer {
-    engine: UnifiedEngine,
+    fts: FtsTable,
     parser: HtmlParser,
     documents: HashMap<u32, ParsedDocument>,
     next_id: u32,
@@ -15,10 +15,16 @@ pub struct Indexer {
 
 impl Indexer {
     pub fn new() -> Self {
-        let config = EngineConfig::memory_only();
-        let engine = UnifiedEngine::new(config).expect("Failed to create engine");
+        let fts = FtsTable::new(
+            "documents",
+            vec![
+                "url".to_string(),
+                "title".to_string(),
+                "content".to_string(),
+            ],
+        );
         Self {
-            engine,
+            fts,
             parser: HtmlParser::new(),
             documents: HashMap::new(),
             next_id: 1,
@@ -31,8 +37,14 @@ impl Indexer {
         let index_file = std::path::Path::new(&index_path);
         let documents_path = format!("{}.documents.json", path);
 
-        let config = EngineConfig::persistent(path).with_drop_if_exists(!index_file.exists());
-        let engine = UnifiedEngine::new(config).expect("Failed to create engine");
+        let fts = FtsTable::new(
+            "documents",
+            vec![
+                "url".to_string(),
+                "title".to_string(),
+                "content".to_string(),
+            ],
+        );
 
         let documents = if index_file.exists() {
             Self::load_documents(&documents_path)
@@ -40,15 +52,25 @@ impl Indexer {
             HashMap::new()
         };
 
-        let next_id = documents.keys().max().map(|k| k + 1).unwrap_or(1);
-
-        Self {
-            engine,
+        let mut indexer = Self {
+            fts,
             parser: HtmlParser::new(),
-            documents,
-            next_id,
+            documents: HashMap::new(),
+            next_id: 1,
             index_path,
+        };
+
+        indexer.documents = documents.clone();
+        indexer.next_id = documents.keys().max().map(|k| k + 1).unwrap_or(1);
+
+        for (id, doc) in &indexer.documents {
+            indexer.fts.insert_with_id(
+                *id as u64,
+                vec![doc.url.clone(), doc.title.clone(), doc.content.clone()],
+            );
         }
+
+        indexer
     }
 
     fn load_documents(path: &str) -> HashMap<u32, ParsedDocument> {
@@ -80,7 +102,6 @@ impl Indexer {
             indexed += 1;
         }
 
-        self.engine.flush().ok();
         self.save_documents();
 
         Ok(IndexStats {
@@ -95,24 +116,18 @@ impl Indexer {
 
         self.documents.insert(id, doc.clone());
 
-        let mut fields = HashMap::new();
-        fields.insert("url".to_string(), doc.url.clone());
-        fields.insert("title".to_string(), doc.title.clone());
-        fields.insert("content".to_string(), doc.content.clone());
-
-        self.engine.add_document(id, fields).ok();
+        self.fts.insert_with_id(
+            id as u64,
+            vec![doc.url.clone(), doc.title.clone(), doc.content.clone()],
+        );
     }
 
-    pub fn search(&self, query: &str, limit: usize) -> Vec<SearchResult> {
-        let result = match self.engine.search(query) {
-            Ok(r) => r,
-            Err(_) => return Vec::new(),
-        };
+    pub fn search(&mut self, query: &str, limit: usize) -> Vec<SearchResult> {
+        let results = self.fts.search(query);
 
-        let doc_ids = result.top(limit);
-        let mut results = Vec::new();
-
-        for doc_id in doc_ids {
+        let mut search_results = Vec::new();
+        for (rowid, _score, values) in results {
+            let doc_id = rowid as u32;
             if let Some(doc) = self.documents.get(&doc_id) {
                 let snippet = if doc.content.len() > 100 {
                     let end = doc
@@ -127,21 +142,23 @@ impl Indexer {
                     doc.content.clone()
                 };
 
-                results.push(SearchResult {
+                search_results.push(SearchResult {
                     url: doc.url.clone(),
                     title: doc.title.clone(),
                     snippet,
                     score: 1.0,
                 });
+
+                if search_results.len() >= limit {
+                    break;
+                }
             }
         }
 
-        results
+        search_results
     }
 
-    pub fn flush(&self) {
-        self.engine.flush().ok();
-    }
+    pub fn flush(&self) {}
 
     pub fn get_stats(&self) -> IndexStats {
         IndexStats {
@@ -185,7 +202,6 @@ mod tests {
         );
 
         indexer.index_document(doc);
-        indexer.flush();
 
         let results = indexer.search("Test", 10);
         assert!(!results.is_empty());
@@ -202,7 +218,6 @@ mod tests {
         );
 
         indexer.index_document(doc);
-        indexer.flush();
 
         let results = indexer.search("中文", 10);
         assert!(!results.is_empty());
@@ -219,7 +234,6 @@ mod tests {
         );
 
         indexer.index_document(doc);
-        indexer.flush();
 
         let results = indexer.search("搜尋", 10);
         assert!(!results.is_empty());
@@ -241,8 +255,6 @@ mod tests {
             "Python 也是一種程式語言".to_string(),
         ));
 
-        indexer.flush();
-
         let results = indexer.search("程式", 10);
         assert_eq!(results.len(), 2);
     }
@@ -257,8 +269,6 @@ mod tests {
             "Content".to_string(),
         ));
 
-        indexer.flush();
-
         let stats = indexer.get_stats();
         assert_eq!(stats.documents, 1);
     }
@@ -266,7 +276,7 @@ mod tests {
     #[test]
     fn test_persistent_indexer() {
         let temp_dir = TempDir::new().unwrap();
-        let index_path = temp_dir.path().join("test_index.nfts");
+        let index_path = temp_dir.path().join("test_index.db");
 
         let mut indexer = Indexer::new_persistent(index_path.to_str().unwrap());
 
@@ -276,15 +286,13 @@ mod tests {
             "Persistent content".to_string(),
         ));
 
-        indexer.flush();
-
         let stats = indexer.get_stats();
         assert_eq!(stats.documents, 1);
     }
 
     #[test]
     fn test_search_empty_query() {
-        let indexer = Indexer::new();
+        let mut indexer = Indexer::new();
         let results = indexer.search("", 10);
         assert!(results.is_empty());
     }

@@ -6,6 +6,6 @@
 4. 規劃寫在 _doc/ 下，每一個版本都要寫出 vx.y.md ，例如： v0.1.md v0.2.md ....v 1.1.md
     * 每次進版基本上都前進 0.1 版
 5. 語法必須修改到沒有 warning 
-    * 如果是 rust ，可以用 #![allow(dead_code, unused)]
+    * 如果是 rust ，請用 #![allow(dead_code, unused)] 避免 warning
 
 
